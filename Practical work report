@@ -1,0 +1,867 @@
+Завдання 4
+
+Звіт про лабораторну роботу: Порівняння алгоритмів спряжених градієнтів
+1. Мета роботи
+Метою даної роботи було порівняння трьох варіацій методу спряжених градієнтів: Флетчера-Рівза (Fletcher-Reeves), Полака-Ріб'єра (Polak-Ribiere) та Хестенеса-Штіфеля (Hestenes-Stiefel). Порівняння проводилося шляхом аналізу швидкості збіжності кожного алгоритму при розв'язанні системи лінійних рівнянь Ax=b, де A — симетрична, додатно визначена матриця.
+
+2. Опис використаних методів
+Для досягнення поставленої мети було реалізовано алгоритм спряжених градієнтів у середовищі MATLAB. Ключова відмінність між трьома методами полягає у формулі для обчислення коефіцієнта βk​, який визначає новий напрямок пошуку pk​.
+Метод Флетчера-Рівза (FR):
+βkFR​=rkT​rk​rk+1T​rk+1​​
+Це класичний метод, що базується на ортогональності залишків.
+Метод Полака-Ріб'єра (PR):
+βkPR​=rkT​rk​rk+1T​(rk+1​−rk​)​
+Ця формула враховує зміну залишку, що робить її більш ефективною на практиці.
+Метод Хестенеса-Штіфеля (HS):
+βkHS​=pkT​(rk+1​−rk​)rk+1T​(rk+1​−rk​)​
+Цей метод часто вважається найбільш надійним у реальних обчисленнях.
+Усі алгоритми були реалізовані в одній функції CG_method, яка приймає тип методу як вхідний параметр.
+
+
+
+
+Скріншот коду
+clc; clear; close all;
+
+n = 10;
+
+A = randn(n);
+A = A'*A + eye(n)*0.1; 
+
+b = randn(n,1);
+
+x0 = zeros(n,1);
+
+maxIter = 20;
+
+[xFR, hFR] = CG_method(A,b,x0,maxIter,'FR');
+[xPR, hPR] = CG_method(A,b,x0,maxIter,'PR');
+[xHS, hHS] = CG_method(A,b,x0,maxIter,'HS');
+
+figure;
+semilogy(hFR,'-o','LineWidth',1.5); hold on;
+semilogy(hPR,'-s','LineWidth',1.5);
+semilogy(hHS,'-d','LineWidth',1.5);
+grid on;
+xlabel('Ітерація');
+ylabel('||r|| (норма залишку)');
+title('Порівняння методів спряжених градієнтів');
+legend('Fletcher-Reeves','Polak-Ribiere','Hestenes-Stiefel');
+
+function [x, history] = CG_method(A,b,x0,maxIter,type)
+    r = b - A*x0;
+    p = r;
+    x = x0;
+    history = zeros(maxIter,1);
+
+    for k=1:maxIter
+        Ap = A*p;
+        alpha = (r'*r)/(p'*Ap);
+        x = x + alpha*p;
+        r_new = r - alpha*Ap;
+        history(k) = norm(r_new);
+
+        if norm(r_new) < 1e-6
+            history = history(1:k);
+            break;
+        end
+
+        switch type
+            case 'FR'
+                beta = (r_new'*r_new)/(r'*r);
+            case 'PR'
+                beta = (r_new'*(r_new-r))/(r'*r);
+            case 'HS'
+                beta = (r_new'*(r_new-r))/(p'*(r_new-r));
+        end
+
+        p = r_new + beta*p;
+        r = r_new;
+    end
+end
+
+
+
+
+
+
+
+
+3. Експериментальні результати
+Експеримент проводився з використанням випадкової симетричної додатно визначеної матриці A розміром 10×10. Початкове наближення x0​ було встановлено як нульовий вектор.
+На графіку представлено залежність норми залишку (∣∣r∣∣) від кількості ітерацій для кожного з трьох методів. За даними графіка, можна зробити такі висновки:
+Методи FR і PR демонструють схожу поведінку, показуючи поступове зменшення залишку, а потім різкий спад до значення, меншого за 10−9, приблизно на 10-й ітерації. Це свідчить про високу швидкість збіжності цих методів для даної задачі.
+Метод HS також демонструє швидку збіжність на початкових етапах. Однак, на відміну від FR і PR, його крива стабілізується на значенні, значно вищому за 10−9, що може свідчити про меншу точність розв'язку в цьому конкретному випадку, або ж про особливості поведінки методу, які можуть відрізнятися від експерименту до експерименту.
+
+Скріншот порівняння спряжених градієнтів
+
+
+4. Висновки
+За результатами проведеного експерименту можна зробити висновок, що всі три методи спряжених градієнтів успішно розв'язали поставлену задачу, але з різною ефективністю та точністю.
+Polak-Ribiere та Fletcher-Reeves виявилися дуже ефективними і досягли високої точності розв'язку за невелику кількість ітерацій.
+Hestenes-Stiefel показав хорошу початкову динаміку, але не досяг такої ж високої кінцевої точності, як його конкуренти.
+У більшості практичних застосувань методи Polak-Ribiere та Hestenes-Stiefel вважаються кращими за Fletcher-Reeves через їхню більшу стійкість до похибок округлення та, як правило, швидшу збіжність. Однак, як показує цей експеримент, кінцева ефективність може залежати від конкретних властивостей матриці A.
+Завдання 6
+Звіт по виконаній роботі
+Тема: Метод Заутендайка для розв’язання задач нелінійного програмування
+Мета роботи
+Навчитися застосовувати метод Заутендайка для пошуку оптимального розв’язку задачі мінімізації нелінійної функції з обмеженнями.
+Теоретичні відомості
+Метод Заутендайка — це ітераційний метод для розв’язання задачі оптимізації з обмеженнями виду:
+min⁡f(x)за умовgi(x)≤0, i=1,...,m\min f(x) \quad \text{за умов} \quad g_i(x) \le 0, \, i = 1,...,m
+На кожній ітерації визначається напрямок руху ss за допомогою лінійного апроксимування обмежень і градієнта цільової функції. Потім обчислюється оптимальний крок α\alpha вздовж напрямку ss з урахуванням активних обмежень.
+
+Постановка задачі
+Цільова функція:
+f(x1,x2)=(x1−2)2+(x2−1)2f(x_1, x_2) = (x_1 - 2)^2 + (x_2 - 1)^2
+Обмеження:
+{x1+x2≤2,x1≥0,x2≥0\begin{cases} x_1 + x_2 \le 2, \\ x_1 \ge 0, \\ x_2 \ge 0 \end{cases}
+Початкова точка: x0=[0.5;0.5]x_0 = [0.5; 0.5]
+ Допустима точність: tol=10−6\text{tol} = 10^{-6}
+ Максимальна кількість ітерацій: 50
+Опис виконання роботи
+
+Скріншот робочого коду
+function zoutendijk_fixed_solution()
+
+clc; clear; close all;
+
+
+f = @(x) (x(1)-2)^2 + (x(2)-1)^2;
+grad_f = @(x) [2*(x(1)-2); 2*(x(2)-1)];
+
+
+g_constraints = @(x) [x(1) + x(2) - 2; -x(1); -x(2)];
+grad_g = @(x) [[1; 1], [-1; 0], [0; -1]];
+
+
+x_k = [0.5; 0.5];
+tol = 1e-6;
+max_iter = 50;
+iter = 0;
+
+
+history = zeros(2, max_iter + 1);
+history(:, 1) = x_k;
+
+fprintf('Iter | x1        | x2        | f(x)      | ||grad_f|| \n');
+fprintf('-----------------------------------------------------\n');
+
+while iter < max_iter
+    iter = iter + 1;
+    
+    g_vals = g_constraints(x_k);
+    active_indices = find(g_vals >= -tol);
+
+    c = grad_f(x_k);
+    
+    if isempty(active_indices)
+        s = -c;
+    else
+        A_lp = grad_g(x_k);
+        A_lp = A_lp(:, active_indices)';
+        b_lp = zeros(size(A_lp, 1), 1);
+        
+        options = optimoptions('linprog', 'Display', 'none');
+        [s, ~, exitflag] = linprog(c, A_lp, b_lp, [], [], [-1;-1], [1;1], options);
+        
+        if exitflag ~= 1 || norm(s) < tol
+            fprintf('Оптимальне рішення знайдено, напрямок нульовий. Зупинка.\n');
+            history = history(:, 1:iter);
+            break;
+        end
+    end
+    
+    s = s / norm(s);
+    
+    alpha_sym = sym('alpha');
+    x_new_sym = x_k + alpha_sym * s;
+    f_alpha = (x_new_sym(1) - 2)^2 + (x_new_sym(2) - 1)^2;
+    df_dalpha = diff(f_alpha, alpha_sym);
+    
+    alpha_optimal = double(solve(df_dalpha == 0, alpha_sym));
+
+    alpha_max = inf;
+    G = grad_g(x_k);
+    for i = 1:numel(g_vals)
+        if s' * G(:,i) < -tol
+            alpha_max = min(alpha_max, -g_vals(i) / (s' * G(:,i)));
+        end
+    end
+    
+    alpha = min(alpha_optimal, alpha_max);
+    
+    x_k = x_k + alpha * s;
+    history(:, iter + 1) = x_k;
+    
+    fprintf('%4d | %8.4f | %8.4f | %8.4f | %8.4f\n', ...
+            iter, x_k(1), x_k(2), f(x_k), norm(grad_f(x_k)));
+end
+
+
+figure;
+hold on;
+fcontour(@(x1, x2) (x1-2)^2 + (x2-1)^2, [0 3 0 3], 'LevelStep', 0.5);
+plot([2 0], [0 2], 'k-');
+plot([0 3], [0 0], 'k-');
+plot([0 0], [0 3], 'k-');
+plot(history(1,:), history(2,:), '-o', 'LineWidth', 2);
+xlabel('x_1');
+ylabel('x_2');
+title('Метод Заутендайка');
+grid on;
+axis equal;
+legend('Цільова функція', 'Обмеження', 'Шлях ітерацій');
+hold off;
+
+end
+
+
+Реалізація цільової функції та її градієнта:
+
+
+f = @(x) (x(1)-2)^2 + (x(2)-1)^2;
+grad_f = @(x) [2*(x(1)-2); 2*(x(2)-1)];
+
+Задання обмежень та їх градієнтів:
+
+
+g_constraints = @(x) [x(1) + x(2) - 2; -x(1); -x(2)];
+grad_g = @(x) [[1;1], [-1;0], [0;-1]];
+
+Визначення активних обмежень та напрямку руху
+ Якщо активних обмежень немає, використовується напрямок протилежний градієнту.
+ Якщо активні обмеження присутні, розв’язується лінійна задача для визначення напрямку, що задовольняє обмеження.
+
+
+Обчислення оптимального кроку α\alpha
+ Використовується символьне диференціювання для знаходження α\alpha, а також враховується максимально допустимий крок, обмежений обмеженнями.
+
+
+Ітераційний процес
+ На кожній ітерації відбувається оновлення точки:
+
+
+xk+1=xk+αsx_{k+1} = x_k + \alpha s
+Історія ітерацій зберігається для подальшого графічного відображення.
+
+
+
+Результати виконання роботи
+Таблиця ітерацій (фрагмент):
+
+
+Графічне відображення
+Було побудовано графік із рівнями цільової функції, обмеженнями та шляхом ітерацій:
+Рівні цільової функції показані контуром.
+
+
+Обмеження показані чорними лініями.
+
+
+Шлях ітерацій показаний лінією з маркерами, яка демонструє рух алгоритму.
+
+Висновок
+Метод Заутендайка дозволяє знаходити оптимальне рішення задачі мінімізації з обмеженнями.
+
+
+Алгоритм коректно обчислює напрямок та крок, однак в даному випадку початкова точка та формулювання обмежень призвели до застрягання на невірній точці.
+
+
+
+Метод забезпечує наочне графічне відображення процесу оптимізації, що є корисним для аналізу поведінки алгоритму.
+
+
+
+
+
+
+
+
+
+
+Завдання 10
+Звіт по виконаній роботі
+Тема: Особливості, переваги та недоліки градієнтних методів оптимізації. Приклад реалізації в MATLAB
+
+1. Мета роботи
+Ознайомитися з особливостями градієнтних методів оптимізації, їх перевагами та недоліками, а також реалізувати приклад градієнтного спуску в середовищі MATLAB.
+
+2. Теоретичні відомості
+Градієнтні методи оптимізації — це чисельні методи пошуку екстремумів функцій багатьох змінних, які базуються на використанні значень градієнту функції.
+Ідея методу: рухатися у напрямку, протилежному градієнту, щоб зменшити значення цільової функції.
+Використовуються для гладких і неперервних функцій.
+Є основою багатьох сучасних методів оптимізації у машинному навчанні та штучному інтелекті.
+Формула оновлення змінних:
+xk+1=xk−α∇f(xk)x_{k+1} = x_k - \alpha \nabla f(x_k)
+де α\alpha — крок (швидкість навчання).
+
+3. Особливості, переваги та недоліки
+Особливості:
+Використовують похідні (градієнт).
+
+
+Реалізуються як ітераційні методи.
+
+
+Придатні для високовимірних задач.
+
+
+Переваги:
+Простота реалізації.
+
+
+Швидке зближення для гладких функцій.
+
+
+Ефективність для великих задач.
+
+
+Недоліки:
+Чутливість до вибору параметра кроку.
+
+
+Можуть застрягати у локальних мінімумах.
+
+
+Працюють лише для функцій з похідними.
+
+
+
+
+
+
+
+
+
+
+
+4. Практична реалізація у MATLAB
+Функція:
+clc; clear; close all;
+
+f = @(x) (x(1)-2)^2 + (x(2)-1)^2;
+grad_f = @(x) [2*(x(1)-2); 2*(x(2)-1)];
+
+
+x = [0; 0];
+alpha = 0.1;   
+tol = 1e-6;    
+max_iter = 100;
+
+
+for k = 1:max_iter
+    g = grad_f(x);
+    if norm(g) < tol
+        break;
+    end
+    x = x - alpha * g;  
+    fprintf('Iter %d: x1 = %.4f, x2 = %.4f, f(x) = %.4f\n', k, x(1), x(2), f(x));
+end
+
+disp(['Оптимальне рішення: x1 = ', num2str(x(1)), ', x2 = ', num2str(x(2))]);
+disp(['Мінімум функції: f(x) = ', num2str(f(x))]);
+
+
+
+
+
+
+
+
+
+
+5. Результати роботи
+
+6. Висновки
+Градієнтні методи є ефективними інструментами для знаходження мінімумів гладких функцій.
+
+
+У MATLAB вони легко реалізуються завдяки вбудованим можливостям роботи з функціями.
+
+
+Отримані результати підтверджують збіжність алгоритму до глобального мінімуму у випадку квадратичної функції.
+
+
+Основні недоліки — можливість застрягання у локальних мінімумах та залежність від правильного вибору кроку.
+
+
+
+
+
+
+Завдання 16
+Тема Проаналізуйте узагальнену схему роботи еволюційних
+методів.
+Аналіз та оцінка коду
+Код реалізує основні етапи генетичного алгоритму:
+Ініціалізація популяції: Генерується початкова популяція з 20 випадкових індивідів у заданому діапазоні, що є правильним підходом.
+Оцінка пристосованості: Використовується обернена залежність 1/(1+f(x)), що коректно перетворює задачу мінімізації на задачу максимізації.
+Відбір: Застосовується метод рулетки, що забезпечує більшу ймовірність відбору індивідів з вищою пристосованістю.
+Кросовер: Використовується простий лінійний кросовер, який об'єднує властивості батьків для створення нового покоління. Це ефективний спосіб передачі рис.
+Мутація: Додавання випадкової зміни з ймовірністю 0.2 є важливим для підтримки генетичного різноманіття та запобігання застряганню в локальних мінімумах.
+clc; clear; close all;
+
+
+f = @(x) (x-3).^2;
+
+
+pop_size = 20;        
+num_generations = 50; 
+mutation_rate = 0.2;  
+
+
+population = -10 + 20*rand(1, pop_size);
+
+best_history = zeros(1, num_generations);
+for gen = 1:num_generations
+    
+    fitness = 1./(1 + f(population)); 
+    
+    
+    probs = fitness / sum(fitness);
+    idx = randsample(1:pop_size, pop_size, true, probs);
+    selected = population(idx);
+    
+    
+    new_pop = zeros(1, pop_size);
+    for i = 1:2:pop_size
+        p1 = selected(i);
+        p2 = selected(i+1);
+        alpha = rand;
+        new_pop(i)   = alpha*p1 + (1-alpha)*p2;
+        new_pop(i+1) = alpha*p2 + (1-alpha)*p1;
+    end
+    
+    
+    for i = 1:pop_size
+        if rand < mutation_rate
+            new_pop(i) = new_pop(i) + randn; 
+        end
+    end
+    
+  
+    population = new_pop;
+    
+    
+    [best_val, best_idx] = min(f(population));
+    best_history(gen) = best_val;
+    
+    
+    fprintf('Покоління %d: найкраще x = %.4f, f(x) = %.4f\n', ...
+        gen, population(best_idx), best_val);
+end
+
+disp('--- Результат ---');
+disp(['Оптимальне x ≈ ', num2str(population(best_idx))]);
+disp(['Мінімум f(x) ≈ ', num2str(best_val)]);
+
+
+figure;
+plot(1:num_generations, best_history, '-o','LineWidth',1.5);
+xlabel('Покоління');
+ylabel('Найкраще f(x)');
+title('Еволюція найкращого значення функції');
+grid on;
+
+
+Скріншот коду в середовищі МАТЛАБ
+
+Оцінка результатів
+Отримані результати підтверджують ефективність алгоритму. Теоретичний мінімум функції f(x) знаходиться в точці x=3, де f(x)=0. Алгоритм знайшов рішення x≈3.0294 з мінімальним значенням f(x)≈0.00086578. Це дуже близьке до ідеального значення, що свідчить про успішне сходження. Невеликі коливання значень між поколіннями, які видно у виводі, є нормальною поведінкою і демонструють дію мутації.
+
+Скріншот результатів 
+
+
+
+Висновки
+Представлений код є правильною та робочою реалізацією генетичного алгоритму. Він демонструє всі ключові етапи цього методу і успішно розв'язує поставлену задачу оптимізації.
+
+Завдання 22
+Звіт: Порівняльний аналіз операторів відбору в генетичних алгоритмах
+
+1. Мета роботи
+Метою роботи було проведення порівняльного аналізу ефективності чотирьох основних операторів відбору (пропорційного, ранжирування, турнірного та з використанням порогу) у контексті генетичного алгоритму. Для цього було реалізовано алгоритм для мінімізації функції f(x)=(x−3)2 з використанням кожного з цих методів.
+Скріншот коду в середовищі матлаб
+function selection_comparison()
+clc; clear; close all;
+
+f = @(x) (x-3).^2;
+
+pop_size = 50;      
+num_generations = 100;
+mutation_rate = 0.1;  
+x_range = [-10, 10]; 
+
+
+history_proportional = zeros(1, num_generations);
+history_rank = zeros(1, num_generations);
+history_tournament = zeros(1, num_generations);
+history_truncation = zeros(1, num_generations);
+
+
+population = x_range(1) + (x_range(2) - x_range(1)) * rand(1, pop_size);
+for gen = 1:num_generations
+    fitness = 1./(1 + f(population));
+    probs = fitness / sum(fitness);
+    idx = randsample(1:pop_size, pop_size, true, probs);
+    selected = population(idx);
+    
+    population = crossover_and_mutate(selected, mutation_rate, x_range);
+    
+    best_val = min(f(population));
+    history_proportional(gen) = best_val;
+end
+
+
+population = x_range(1) + (x_range(2) - x_range(1)) * rand(1, pop_size);
+for gen = 1:num_generations
+    [~, sorted_indices] = sort(f(population), 'ascend');
+    ranks = pop_size:-1:1; 
+    probs = ranks / sum(ranks);
+    idx = randsample(1:pop_size, pop_size, true, probs(sorted_indices));
+    selected = population(idx);
+    
+    population = crossover_and_mutate(selected, mutation_rate, x_range);
+    
+    best_val = min(f(population));
+    history_rank(gen) = best_val;
+end
+
+
+population = x_range(1) + (x_range(2) - x_range(1)) * rand(1, pop_size);
+tournament_size = 3;
+for gen = 1:num_generations
+    selected = zeros(1, pop_size);
+    for i = 1:pop_size
+        competitors_idx = randi(pop_size, 1, tournament_size);
+        competitors = population(competitors_idx);
+        [~, winner_idx] = min(f(competitors));
+        selected(i) = competitors(winner_idx);
+    end
+    
+    population = crossover_and_mutate(selected, mutation_rate, x_range);
+    
+    best_val = min(f(population));
+    history_tournament(gen) = best_val;
+end
+
+
+population = x_range(1) + (x_range(2) - x_range(1)) * rand(1, pop_size);
+truncation_rate = 0.5;
+for gen = 1:num_generations
+    [~, sorted_indices] = sort(f(population), 'ascend');
+    num_elite = round(pop_size * truncation_rate);
+    elite_idx = sorted_indices(1:num_elite);
+    selected = repmat(population(elite_idx), 1, ceil(pop_size/num_elite));
+    selected = selected(1:pop_size);
+    
+    population = crossover_and_mutate(selected, mutation_rate, x_range);
+    
+    best_val = min(f(population));
+    history_truncation(gen) = best_val;
+end
+
+
+figure;
+plot(1:num_generations, history_proportional, 'LineWidth', 2);
+hold on;
+plot(1:num_generations, history_rank, 'LineWidth', 2);
+plot(1:num_generations, history_tournament, 'LineWidth', 2);
+plot(1:num_generations, history_truncation, 'LineWidth', 2);
+title('Порівняння операторів відбору');
+xlabel('Покоління');
+ylabel('Найкраще f(x)');
+legend('Пропорційний відбір', 'Відбір за рангом', 'Турнірний відбір', 'Відбір за порогом');
+grid on;
+hold off;
+
+end
+
+
+function new_pop = crossover_and_mutate(selected, mutation_rate, x_range)
+    pop_size = length(selected);
+    new_pop = zeros(1, pop_size);
+    for i = 1:2:pop_size
+        p1 = selected(i);
+        p2 = selected(i+1);
+        alpha = rand;
+        new_pop(i)   = alpha*p1 + (1-alpha)*p2;
+        new_pop(i+1) = alpha*p2 + (1-alpha)*p1;
+    end
+    
+    for i = 1:pop_size
+        if rand < mutation_rate
+            new_pop(i) = new_pop(i) + randn;
+            
+            new_pop(i) = max(min(new_pop(i), x_range(2)), x_range(1));
+        end
+    end
+end
+
+
+
+
+2. Аналіз результатів
+Пропорційний відбір (Roulette Wheel Selection): Цей метод є простим, але має тенденцію до передчасного сходження. У випадку, коли один або кілька індивідів мають значно вищу пристосованість, вони домінують у відборі, що може зменшити генетичне різноманіття популяції. На графіку це відображається у вигляді швидкого, але не завжди стабільного зниження f(x).
+Відбір за допомогою ранжирування (Rank Selection): Метод ранжирування пом'якшує проблему домінування. Він фокусується на відносній пристосованості, а не на абсолютних значеннях. Це призводить до більш плавного та стабільного сходження, оскільки навіть менш "пристосовані" індивіди мають шанс бути обраними, що допомагає зберегти різноманітність.
+Турнірний відбір (Tournament Selection): Цей метод показав високу ефективність і є одним із найпопулярніших. Він є менш чутливим до форми функції пристосованості та забезпечує хороший баланс між тиском відбору та різноманітністю. На графіку це часто виглядає як стабільне і швидке сходження до оптимуму.
+Відбір з використанням порогу (Truncation Selection): Цей метод найагресивніший. Він відбирає лише найкращу частину популяції, відкидаючи всіх інших. Хоча це призводить до дуже швидкого початкового сходження, він також найбільше ризикує втратити різноманітність і застрягти в локальних мінімумах.
+Скріншот результатів
+
+3. Висновки
+Порівняльний аналіз підтвердив, що вибір оператора відбору значно впливає на поведінку та ефективність генетичного алгоритму.
+Найбільш ефективними та надійними для цієї задачі виявилися турнірний відбір та відбір за допомогою ранжирування. Вони забезпечують баланс між швидкістю сходження та збереженням генетичного різноманіття, що є критично важливим для уникнення локальних мінімумів.
+Пропорційний відбір може бути ефективним, але є чутливим до розподілу пристосованості.
+Відбір з використанням порогу демонструє найшвидше початкове покращення, але має найвищий ризик передчасного сходження.
+Виходячи з отриманих даних, для більшості практичних завдань турнірний відбір є найкращим вибором завдяки його надійності, простоті реалізації та відмінним показникам продуктивності.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Завдання 41
+Звіт: Порівняльний аналіз методів оптимізації
+
+
+1. Мета роботи
+Метою роботи було проведення порівняльного аналізу ефективності кількох оптимізаційних алгоритмів — жадібного алгоритму, методу мурашиних колоній (ACO) та генетичного алгоритму (GA) — для розв'язання задачі комівояжера.
+Скріншот коду в середовищі МАТЛАБ
+function compare_tsp_algorithms()
+    clc; clear; close all;
+
+    num_cities = 10;
+    cities = 100 * rand(num_cities, 2); 
+
+    distances = squareform(pdist(cities));
+
+  
+    fprintf('--- Жадібний алгоритм ---\n');
+    [greedy_tour, greedy_length] = run_greedy_tsp(cities, distances);
+    fprintf('Довжина шляху: %.2f\n', greedy_length);
+    plot_tour(cities, greedy_tour, greedy_length, 'Жадібний алгоритм');
+
+    
+    fprintf('\n--- Метод мурашиних колоній (ACO) ---\n');
+    [aco_tour, aco_length] = run_aco_tsp(cities, distances);
+    fprintf('Довжина шляху: %.2f\n', aco_length);
+    plot_tour(cities, aco_tour, aco_length, 'Метод мурашиних колоній (ACO)');
+
+    
+    fprintf('\n--- Генетичний алгоритм (GA) ---\n');
+    [ga_tour, ga_length] = run_ga_tsp(cities, distances);
+    fprintf('Довжина шляху: %.2f\n', ga_length);
+    plot_tour(cities, ga_tour, ga_length, 'Генетичний алгоритм (GA)');
+end
+
+
+function [tour, tour_length] = run_greedy_tsp(cities, distances)
+    num_cities = size(cities, 1);
+    start_city = 1;
+    tour = start_city;
+    visited = zeros(1, num_cities);
+    visited(start_city) = 1;
+    current_city = start_city;
+
+    for i = 2:num_cities
+        next_city = -1;
+        min_dist = inf;
+        for j = 1:num_cities
+            if visited(j) == 0 && distances(current_city, j) < min_dist
+                min_dist = distances(current_city, j);
+                next_city = j;
+            end
+        end
+        tour = [tour, next_city];
+        visited(next_city) = 1;
+        current_city = next_city;
+    end
+    tour_length = get_tour_length(tour, distances);
+end
+
+
+function [best_tour, best_tour_length] = run_aco_tsp(cities, distances)
+    num_cities = size(cities, 1);
+    num_ants = 20;
+    num_iterations = 100;
+    alpha = 1; beta = 2; rho = 0.5; Q = 100;
+
+    pheromone = ones(num_cities, num_cities);
+    best_tour_length = inf;
+    best_tour = [];
+
+    for iter = 1:num_iterations
+        tours = zeros(num_ants, num_cities);
+        tour_lengths = zeros(num_ants, 1);
+
+        for ant = 1:num_ants
+            current_city = randi(num_cities);
+            tour = current_city;
+            visited = zeros(1, num_cities);
+            visited(current_city) = 1;
+            
+            for i = 2:num_cities
+                probabilities = (pheromone(current_city, :).^alpha) .* ((1./(distances(current_city, :) + eps)).^beta);
+                probabilities(visited == 1) = 0;
+                probabilities = probabilities / sum(probabilities);
+                next_city = randsample(1:num_cities, 1, true, probabilities);
+                tour = [tour, next_city];
+                visited(next_city) = 1;
+                current_city = next_city;
+            end
+            tours(ant, :) = tour;
+            tour_lengths(ant) = get_tour_length(tour, distances);
+        end
+
+        pheromone = (1 - rho) * pheromone;
+        for ant = 1:num_ants
+            tour_length = tour_lengths(ant);
+            for i = 1:num_cities-1
+                pheromone(tours(ant, i), tours(ant, i+1)) = pheromone(tours(ant, i), tours(ant, i+1)) + Q / tour_length;
+                pheromone(tours(ant, i+1), tours(ant, i)) = pheromone(tours(ant, i), tours(ant, i+1));
+            end
+        end
+        [min_length, min_idx] = min(tour_lengths);
+        if min_length < best_tour_length
+            best_tour_length = min_length;
+            best_tour = tours(min_idx, :);
+        end
+    end
+end
+
+
+function [best_tour, best_tour_length] = run_ga_tsp(cities, distances)
+    num_cities = size(cities, 1);
+    pop_size = 50;
+    num_generations = 200;
+    mutation_rate = 0.2;
+    population = zeros(pop_size, num_cities);
+    for i = 1:pop_size
+        population(i, :) = randperm(num_cities);
+    end
+    best_tour_length = inf;
+    best_tour = [];
+
+    for gen = 1:num_generations
+        tour_lengths = zeros(1, pop_size);
+        for i = 1:pop_size
+            tour_lengths(i) = get_tour_length(population(i, :), distances);
+        end
+        [min_length, min_idx] = min(tour_lengths);
+        if min_length < best_tour_length
+            best_tour_length = min_length;
+            best_tour = population(min_idx, :);
+        end
+        fitness = 1./(1 + tour_lengths);
+        probs = fitness / sum(fitness);
+        selected_indices = randsample(1:pop_size, pop_size, true, probs);
+        selected = population(selected_indices, :);
+        new_population = zeros(pop_size, num_cities);
+        for i = 1:2:pop_size
+            parent1 = selected(i, :);
+            parent2 = selected(i+1, :);
+            
+            [child1, child2] = ordered_crossover_ox1(parent1, parent2);
+            
+            new_population(i, :) = child1;
+            new_population(i+1, :) = child2;
+        end
+        
+        for i = 1:pop_size
+            if rand < mutation_rate
+                tour_to_mutate = new_population(i, :);
+                idx = randperm(num_cities, 2);
+                tour_to_mutate(idx) = tour_to_mutate(flip(idx));
+                new_population(i, :) = tour_to_mutate;
+            end
+        end
+        
+        population = new_population;
+    end
+end
+
+
+function len = get_tour_length(tour, distances)
+    len = 0;
+    for i = 1:length(tour)-1
+        len = len + distances(tour(i), tour(i+1));
+    end
+    len = len + distances(tour(end), tour(1));
+end
+
+function plot_tour(cities, tour, tour_length, title_text)
+    figure;
+    plot(cities(:,1), cities(:,2), 'o');
+    hold on;
+    tour_coords = cities(tour,:);
+    plot(tour_coords(:,1), tour_coords(:,2), '-o');
+    plot([tour_coords(end,1), tour_coords(1,1)], [tour_coords(end,2), tour_coords(1,2)], '-o');
+    for i = 1:size(cities, 1)
+        text(cities(i,1), cities(i,2), num2str(i));
+    end
+    title(sprintf('%s\nДовжина шляху: %.2f', title_text, tour_length));
+    grid on;
+    hold off;
+end
+
+
+function [child1, child2] = ordered_crossover_ox1(parent1, parent2)
+    num_cities = length(parent1);
+    
+    indices = sort(randi(num_cities, 1, 2));
+    start_pos = indices(1);
+    end_pos = indices(2);
+    
+    child1 = zeros(1, num_cities);
+    child2 = zeros(1, num_cities);
+    
+    child1(start_pos:end_pos) = parent1(start_pos:end_pos);
+    child2(start_pos:end_pos) = parent2(start_pos:end_pos);
+    
+    parent2_cities = parent2(~ismember(parent2, child1));
+    parent1_cities = parent1(~ismember(parent1, child2));
+
+    child1(child1==0) = parent2_cities;
+    child2(child2==0) = parent1_cities;
+end
+
+
+
+
+2. Отримані результати
+Жадібний алгоритм: Знайдений шлях мав довжину 319.42. Цей алгоритм, обираючи найближче місто на кожному кроці, є швидким, але не здатний знайти глобально-оптимальне рішення, оскільки робить вибір на основі лише локальної інформації.
+Метод мурашиних колоній (ACO): Алгоритм продемонстрував значно кращий результат, знайшовши маршрут довжиною 262.08. Це підтверджує, що імітація природних процесів, таких як обмін інформацією через "феромони", дозволяє знаходити якісніші рішення, ніж простий жадібний підхід.
+Генетичний алгоритм (GA): Цей алгоритм знайшов шлях довжиною 275.44. Хоча це краще за жадібний алгоритм, він все ж поступився методу мурашиних колоній. Це може вказувати на потребу в налаштуванні його параметрів (розмір популяції, кількість поколінь) для досягнення кращих результатів.
+
+
+Скріншот результатів
+
+
+
+
+
+
+
+
+3. Висновки
+Проведений аналіз показав, що для задачі комівояжера:
+Метод мурашиних колоній (ACO) виявився найефективнішим, знайшовши найкоротший шлях.
+Генетичний алгоритм (GA) показав хороші результати, перевершивши жадібний алгоритм, але поступившись ACO.
+Жадібний алгоритм виявився найменш ефективним, що є очікуваним для даного типу задач, оскільки він застрягає на локальних мінімумах.
+Таким чином, для складних оптимізаційних задач, таких як задача комівояжера, еволюційні та метаевристичні методи, як ACO та GA, значно перевершують прості жадібні алгоритми.
+
+
+
